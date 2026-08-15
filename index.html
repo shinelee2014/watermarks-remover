@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 水印与溯源标记清理器 | Watermarks Remover Web</title>
+  <meta name="description" content="多厂商 AI 水印与溯源标记清理工具：纯浏览器端清洗隐式 Unicode 零宽字符、C2PA 元数据、PNG/JPEG/WebP/SVG/DOCX/MD/HTML 标记，支持连接 Python 后端。">
+  <link rel="stylesheet" href="style.css">
+  <!-- JSZip for in-browser client-side DOCX package processing -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+</head>
+<body data-theme="dark">
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Watermarks Remover <span class="badge badge-primary">Web Edition</span></h1>
+          <p class="subtitle">多厂商 AI 水印、隐式字符、C2PA 与文档元数据净化工作台</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div id="backend-status-badge" class="status-indicator client-mode" title="点击配置后端 API 连接">
+          <span class="status-dot"></span>
+          <span id="backend-status-text">浏览器纯前端内核</span>
+        </div>
+        <button id="btn-settings" class="btn btn-icon" title="系统与引擎设置" aria-label="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+        <button id="btn-theme-toggle" class="btn btn-icon" title="切换深色/浅色主题" aria-label="Toggle theme">
+          <svg id="icon-theme" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+        <a href="https://github.com/shinelee2014/watermarks-remover" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" title="GitHub 源码仓库">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs" role="tablist">
+      <button id="tab-file-mode" class="tab-btn active" role="tab" aria-selected="true" data-target="panel-file">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span>文件与媒体清理 (File Mode)</span>
+      </button>
+      <button id="tab-text-mode" class="tab-btn" role="tab" aria-selected="false" data-target="panel-text">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4 7 4 4 20 4 20 7"></polyline>
+          <line x1="9" y1="20" x2="15" y2="20"></line>
+          <line x1="12" y1="4" x2="12" y2="20"></line>
+        </svg>
+        <span>实时文本去痕 (Text Layer A/B)</span>
+      </button>
+      <button id="tab-about-mode" class="tab-btn" role="tab" aria-selected="false" data-target="panel-about">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <span>技术原理与支持矩阵</span>
+      </button>
+    </nav>
+
+    <!-- Main Content Panels -->
+    <main class="main-content">
+      <!-- File Mode Panel -->
+      <section id="panel-file" class="tab-panel active" role="tabpanel">
+        <!-- Dropzone -->
+        <div id="dropzone" class="dropzone" tabindex="0">
+          <input type="file" id="file-input" class="file-input" multiple accept=".png,.jpg,.jpeg,.webp,.svg,.pdf,.docx,.odt,.html,.htm,.md,.markdown,.txt">
+          <div class="dropzone-inner">
+            <div class="dropzone-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+            </div>
+            <h3>拖拽文件至此，或 <span class="text-accent">点击选择文件</span></h3>
+            <p class="dropzone-hints">
+              支持格式：<strong>图片</strong> (PNG, JPEG, WebP, SVG) | <strong>文档</strong> (DOCX, PDF, ODT, HTML, Markdown) | <strong>文本</strong> (.txt, 代码)
+            </p>
+            <div class="privacy-tag">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>100% 浏览器本地运算，文件绝不上载至外部云端</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Options Toolbar -->
+        <div class="options-bar">
+          <div class="option-group">
+            <label class="checkbox-label" title="清除零宽空格、Bidi覆写符、标签字符与私有区">
+              <input type="checkbox" id="opt-layer-a" checked>
+              <span>Unicode 隐式字符清洗 (Layer A)</span>
+            </label>
+            <label class="checkbox-label" title="将同形异义全角/窄空格规范化为标准 ASCII 空格">
+              <input type="checkbox" id="opt-norm-spaces" checked>
+              <span>空格规范化 (Homoglyphs)</span>
+            </label>
+            <label class="checkbox-label" title="保留 Emoji 粘合序列与复合语种连接符">
+              <input type="checkbox" id="opt-preserve-emoji" checked>
+              <span>Emoji 与正字法保护</span>
+            </label>
+          </div>
+          <div class="option-actions">
+            <button id="btn-clean-all" class="btn btn-primary" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+              <span>批量一键清洗</span>
+            </button>
+            <button id="btn-clear-list" class="btn btn-ghost" disabled>清空列表</button>
+          </div>
+        </div>
+
+        <!-- Processed Files List -->
+        <div id="file-list-container" class="file-list-container hidden">
+          <div class="section-title">
+            <h3>待处理与清洗结果 (<span id="file-count">0</span>)</h3>
+          </div>
+          <div id="file-cards" class="file-cards-grid">
+            <!-- Dynamic file cards injected by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Text Mode Panel -->
+      <section id="panel-text" class="tab-panel" role="tabpanel">
+        <div class="text-mode-grid">
+          <!-- Input Card -->
+          <div class="card text-card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="dot dot-amber"></span>
+                <h3>原始待检文本</h3>
+              </div>
+              <div class="card-controls">
+                <button id="btn-paste-text" class="btn btn-xs btn-secondary">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  粘贴剪贴板
+                </button>
+                <button id="btn-sample-text" class="btn btn-xs btn-ghost">加载测试样本</button>
+                <button id="btn-clear-text" class="btn btn-xs btn-ghost">清空</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <textarea id="text-input" class="textarea-editor" placeholder="在此粘贴任意疑似包含 AI 水印、隐式零宽字符或同形混淆的文本..."></textarea>
+            </div>
+            <div class="card-footer">
+              <span id="input-stats" class="text-muted">字数: 0 字符</span>
+              <button id="btn-clean-text-now" class="btn btn-primary btn-sm">
+                <span>立即净化文本</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Output Card -->
+          <div class="card text-card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="dot dot-green"></span>
+                <h3>净化后纯净文本</h3>
+              </div>
+              <div class="card-controls">
+                <button id="btn-copy-output" class="btn btn-xs btn-secondary" title="复制纯净文本">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  复制结果
+                </button>
+                <button id="btn-download-text" class="btn btn-xs btn-ghost" title="保存为文本文件">下载 .txt</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <textarea id="text-output" class="textarea-editor" readonly placeholder="清洗后的纯净文本将在此处呈现..."></textarea>
+            </div>
+            <div class="card-footer">
+              <div id="output-stats-badges" class="badges-row">
+                <span class="badge badge-neutral">暂无清洗任务</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detection & Suspicious Codepoints Inspector -->
+        <div id="text-inspect-details" class="card inspect-card hidden">
+          <div class="card-header">
+            <h3>🔬 隐式字符检视与命中清单 (Unicode Audit)</h3>
+            <span id="suspicious-total-badge" class="badge badge-danger">发现 0 处可疑字符</span>
+          </div>
+          <div class="card-body">
+            <div id="hits-table-container" class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Unicode 码点</th>
+                    <th>字符分类 / 名称</th>
+                    <th>命中类型</th>
+                    <th>出现频次</th>
+                    <th>置信度</th>
+                    <th>样本索引位置</th>
+                  </tr>
+                </thead>
+                <tbody id="hits-tbody">
+                  <!-- Injected by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Technical Overview Panel -->
+      <section id="panel-about" class="tab-panel" role="tabpanel">
+        <div class="about-grid">
+          <div class="card">
+            <div class="card-header">
+              <h3>🛡️ 四大技术防御矩阵</h3>
+            </div>
+            <div class="card-body">
+              <div class="feature-item">
+                <div class="feature-icon bg-blue">A</div>
+                <div class="feature-text">
+                  <h4>Layer A: 隐式 Unicode 确定性净化</h4>
+                  <p>精准识别并剥离零宽字符（ZWSP <code>U+200B</code>、ZWNJ <code>U+200C</code>）、Bidi 覆写控制符、Unicode 标签字符（<code>U+E0001..7F</code>）、变体选择符（VS）以及私有区（PUA），同时针对 Emoji 连字符与复合正字法做非破坏性保护。</p>
+                </div>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon bg-purple">B</div>
+                <div class="feature-text">
+                  <h4>Layer B: 统计采样水印对抗 (Token Bias Rewrite)</h4>
+                  <p>针对绿红列表（Kirchenbauer）与 SynthID-Text 采样偏置，通过非源头大模型进行句法结构、功能词与连词的深度洗牌重写，并利用 Bigram Jaccard 词汇发散度算法打分选优。</p>
+                </div>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon bg-emerald">M</div>
+                <div class="feature-text">
+                  <h4>媒体与容器元数据物理剥离</h4>
+                  <p>纯二进制解析 PNG/JPEG/WebP/SVG 的 C2PA JUMBF Manifest、EXIF、Adobe XMP、ICC 配置文件；对 DOCX/ODT 进行流式解压预算清洗，对 PDF 配合 <code>qpdf --linearize</code> 杜绝增量修改残留。</p>
+                </div>
+              </div>
+              <div class="feature-item">
+                <div class="feature-icon bg-amber">P</div>
+                <div class="feature-text">
+                  <h4>双模运行与绝对隐私</h4>
+                  <p>默认使用 100% 浏览器客户端引擎（WebAssembly/JavaScript），所有计算均在您的设备内完成；可无缝接入本地 Python 服务（<code>http://127.0.0.1:8765</code>）扩展专业重构后端。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3>📋 格式支持与能力对照表</h3>
+            </div>
+            <div class="card-body table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>文件类型</th>
+                    <th>客户端纯前端处理</th>
+                    <th>本地 Python 增强模式</th>
+                    <th>清洗内容</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>.txt / .js / .py</code></td>
+                    <td><span class="badge badge-success">完全支持</span></td>
+                    <td><span class="badge badge-success">完全支持</span></td>
+                    <td>Layer A 隐式字符 + 空格同形词</td>
+                  </tr>
+                  <tr>
+                    <td><code>.md / .html</code></td>
+                    <td><span class="badge badge-success">完全支持</span></td>
+                    <td><span class="badge badge-success">完全支持</span></td>
+                    <td>YAML Frontmatter AI 键 + Meta 标签 + Layer A</td>
+                  </tr>
+                  <tr>
+                    <td><code>.png / .jpg / .webp</code></td>
+                    <td><span class="badge badge-success">完全支持</span></td>
+                    <td><span class="badge badge-success">完全支持</span></td>
+                    <td>C2PA (JUMBF), EXIF, XMP, ICC Profiles</td>
+                  </tr>
+                  <tr>
+                    <td><code>.svg</code></td>
+                    <td><span class="badge badge-success">完全支持</span></td>
+                    <td><span class="badge badge-success">完全支持</span></td>
+                    <td>&lt;metadata&gt; 块, RDF, AI 注释</td>
+                  </tr>
+                  <tr>
+                    <td><code>.docx / .odt</code></td>
+                    <td><span class="badge badge-success">完全支持 (JSZip)</span></td>
+                    <td><span class="badge badge-success">完全支持</span></td>
+                    <td>docProps, customXml, 生成器元数据</td>
+                  </tr>
+                  <tr>
+                    <td><code>.pdf</code></td>
+                    <td><span class="badge badge-warning">仅检视/简单清洗</span></td>
+                    <td><span class="badge badge-success">qpdf 物理重构</span></td>
+                    <td>XMP 数据包, 对象图重建</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="modal-settings" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>⚙️ 系统与后端引擎配置</h3>
+          <button id="btn-close-modal" class="btn btn-icon btn-sm">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="setting-backend-url">Python 后端服务 URL (可选)</label>
+            <input type="url" id="setting-backend-url" class="form-input" placeholder="http://127.0.0.1:8765" value="http://127.0.0.1:8765">
+            <small class="form-hint">本地启动命令：<code>python service/scripts/server.py --host 127.0.0.1 --port 8765</code></small>
+          </div>
+          <div class="form-group">
+            <label for="setting-api-key">后端 API Key (若配置了 <code>WATERMARKS_SERVER_API_KEY</code>)</label>
+            <input type="password" id="setting-api-key" class="form-input" placeholder="留空即表示无鉴权">
+          </div>
+          <div class="form-group">
+            <button id="btn-test-connection" class="btn btn-secondary btn-sm">测试后端连通性</button>
+            <span id="connection-test-result" class="test-result-text"></span>
+          </div>
+          <hr class="divider">
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="setting-prefer-backend">
+              <span>当后端在线时，优先使用后端 Python 引擎处理复杂文件</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-save-settings" class="btn btn-primary">保存配置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inspect Details Modal -->
+    <div id="modal-inspect" class="modal-overlay hidden">
+      <div class="modal-card modal-lg">
+        <div class="modal-header">
+          <h3 id="inspect-modal-title">🔍 文件元数据与溯源检视报告</h3>
+          <button id="btn-close-inspect-modal" class="btn btn-icon btn-sm">&times;</button>
+        </div>
+        <div class="modal-body" id="inspect-modal-body">
+          <!-- Injected dynamically -->
+        </div>
+        <div class="modal-footer">
+          <button id="btn-inspect-modal-clean" class="btn btn-primary">立即清洗此文件</button>
+          <button id="btn-inspect-modal-close" class="btn btn-secondary">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>Watermarks Remover Web | 面向自持资产的 AI 隐私与溯源标记清洗工具 | 100% 开源</p>
+      <p class="disclaimer">免责声明：本项目仅供个人合法自研内容之隐私保护与卫生清理，严禁用于学术不端或违反法律法规之欺诈用途。</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
